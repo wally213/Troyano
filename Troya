@@ -1,0 +1,1172 @@
+@echo off
+
+
+
+REM Setup Basic Things
+
+setlocal enabledelayedexpansion
+
+mode 120, 36
+
+chcp 65001 >nul
+
+TITLE Vitality
+
+
+
+REM Set Colors
+
+set l=[38;5;240m
+
+set r=[38;5;216m
+
+set e=[0m
+
+set ar=[38;5;203m
+
+
+
+::Ask for ADMIN permissions inside batch (https://stackoverflow.com/questions/1894967/how-to-request-administrator-access-inside-a-batch-file)
+
+REM  Check for permissions
+
+    if "%PROCESSOR_ARCHITECTURE%" EQU "amd64" (
+
+>nul 2>&1 "%SYSTEMROOT%\SysWOW64\cacls.exe" "%SYSTEMROOT%\SysWOW64\config\system"
+
+) else (
+
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+
+)
+
+
+
+REM If error flag set, we do not have admin.
+
+if '%errorlevel%' NEQ '0' (
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo.
+
+    echo                                       %r% _      _  _____   __    _     _  _____  _%l%
+
+    echo                                      %r% \ \  / ^| ^|  ^| ^|   / /\  ^| ^|   ^| ^|  ^| ^|  \ \_/%l%
+
+    echo                                        %r%\_\/  ^|_^|  ^|_^|  /_/--\ ^|_^|__ ^|_^|  ^|_^|   ^|_^|%l%
+
+    echo.
+
+    echo                                                 Requesting Admin Previleges
+
+) else ( goto gotAdmin )
+
+
+
+:UACPrompt
+
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+
+    set params= %*
+
+    echo UAC.ShellExecute "cmd.exe", "/c ""%~s0"" %params:"=""%", "", "runas", 1 >> "%temp%\getadmin.vbs"
+
+
+
+    "%temp%\getadmin.vbs"
+
+    del "%temp%\getadmin.vbs"
+
+    exit /B
+
+
+
+:gotAdmin
+
+    pushd "%CD%"
+
+    CD /D "%~dp0"
+
+
+
+
+
+:: Check if this batch file has already determined the SystemType
+
+if exist "%temp%\SystemType.txt" (
+
+    set /p SystemType=<"%temp%\SystemType.txt"
+
+    goto SkipCheck
+
+)
+
+:: Initialize variable
+
+set "SystemType=Unknown"
+
+
+
+:: Run PowerShell command and assign output to SystemType
+
+for /f %%i in ('powershell -Command "try {$enclosure = Get-WmiObject Win32_SystemEnclosure; switch ($enclosure.ChassisTypes) { 3 {'Desktop'} 9 {'Laptop'} default {'Unknown'} }} catch {'Error'}"') do (
+
+    set "SystemType=%%i"
+
+)
+
+
+
+:: Save the SystemType for future use
+
+echo %SystemType% > "%temp%\SystemType.txt"
+
+
+
+:: Relaunch the script
+
+set "batch_file=%~f0" 
+
+start "" "%batch_file%"
+
+exit
+
+
+
+:SkipCheck
+
+if %SystemType%==Desktop set "SystemType=Desktop            " 
+
+if %SystemType%==Laptop set "SystemType=Laptop             "
+
+
+
+
+
+REM Create Required Directories 
+
+REM Check and Create Main Directory
+
+if not exist "C:\Vitality\" (
+
+    mkdir "C:\Vitality"
+
+)
+
+
+
+REM Check and Create Info Directory
+
+if not exist "C:\Vitality\Info\" (
+
+    mkdir "C:\Vitality\Info"
+
+)
+
+
+
+REM Check and Create Backup Directory
+
+if not exist "C:\Vitality\Backup\" (
+
+    mkdir "C:\Vitality\Backup"
+
+)
+
+
+
+REM Check and Create Resources Directory
+
+if not exist "C:\Vitality\Resources\" (
+
+    mkdir "C:\Vitality\Resources"
+
+)
+
+
+
+cd C:\Vitality
+
+cls
+
+
+
+
+
+
+
+REM Optimization Counter
+
+if not exist "C:\Vitality\v.bat" echo set "ran_optimizations=0"> v.bat
+
+call v.bat
+
+set "formatted_optimizations=%ran_optimizations%"
+
+if %formatted_optimizations% LSS 10 set "formatted_optimizations= %formatted_optimizations%"
+
+
+
+REM Choice Setup
+
+for /f %%A in ('"prompt $H &echo on &for %%B in (1) do rem"') do set BS=%%A
+
+
+
+REM Welcome Message
+
+if exist C:\Vitality\Info\welcome1 (
+
+    set welcome1=Welcome back %r%%username%%e%, have a good time using Vitality.
+
+) else (
+
+    set welcome1=Welcome to Vitality %r%%username%%e%. Optimize your PC to %r%MAX%l%
+
+    echo Vitality > C:\Vitality\Info\welcome1
+
+)
+
+
+
+for /F "tokens=* skip=1" %%n in ('WMIC path Win32_VideoController get Name ^| findstr "."') do set GPU_NAME=%%n >nul
+
+REM Tweaks Part
+
+set gpu1=NaN
+
+echo %GPU_NAME% | find "NVIDIA" && set gpu1=Nvidia >nul 2>&1
+
+echo %GPU_NAME% | find "AMD" && set gpu1=AMD >nul 2>&1
+
+
+
+REM Configuration Part
+
+set Configuration10=:Configuration14
+
+echo %GPU_NAME% | find "AMD" && set Configuration10=:Configuration10AMD >nul 2>&1
+
+echo %GPU_NAME% | find "NVIDIA" && set Configuration10=:Configuration10Nvidia >nul 2>&1
+
+
+
+
+
+for /F "skip=1 delims=" %%A in ('wmic cpu get name') do (
+
+    set "cpuName=%%A"
+
+    goto :check_brand
+
+)
+
+
+
+:check_brand
+
+echo %cpuName% | find "Intel" >nul 2>&1
+
+if %errorlevel%==0 (
+
+    set "cpu1=Intel"
+
+    set "Configuration23=:Configuration23Intel"
+
+) else (
+
+    set "cpu1=AMD"
+
+    set "Configuration23=:Configuration23AMD"
+
+)
+
+
+
+REM Go to last know page after applying tweaks
+
+if defined LastPage goto %LastPage%
+
+
+
+:Loading
+
+cls
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo.
+
+echo                                       %r% _      _  _____   __    _     _  _____  _%l%
+
+echo                                      %r% \ \  / ^| ^|  ^| ^|   / /\  ^| ^|   ^| ^|  ^| ^|  \ \_/%l%
+
+echo                                        %r%\_\/  ^|_^|  ^|_^|  /_/--\ ^|_^|__ ^|_^|  ^|_^|   ^|_^|%l%
+
+echo.
+
+
+
+cd "C:\Vitality\Backup"
+
+if not exist "%SYSTEMDRIVE%\Vitality\Backup\regbackup.reg" Regedit /e "%SYSTEMDRIVE%\Vitality\Backup\regbackup.reg" >nul 2>&1
+
+
+
+
+
+if not exist "C:\Vitality\Backup\RestorePoint.bat" (
+
+    echo @echo off > "%SYSTEMDRIVE%\Vitality\Backup\RestorePoint.bat"
+
+    echo reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v "SystemRestorePointCreationFrequency" /t REG_DWORD /d 0 /f >> "C:\Vitality\Backup\RestorePoint.bat"
+
+    echo powershell -ExecutionPolicy Unrestricted -NoProfile Enable-ComputerRestore -Drive 'C:\', 'D:\', 'E:\', 'F:\', 'G:\' >> "C:\Vitality\Backup\RestorePoint.bat"
+
+    echo powershell -ExecutionPolicy Unrestricted -NoProfile Checkpoint-Computer -Description 'Vitality' >> "C:\Vitality\Backup\RestorePoint.bat"
+
+    echo exit >> "%SYSTEMDRIVE%\Vitality\Backup\RestorePoint.bat"
+
+    start /min "" "%SYSTEMDRIVE%\Vitality\Backup\RestorePoint.bat"
+
+)
+
+
+
+Ping www.google.nl -n 1 -w 1000 >nul
+
+if %errorlevel% neq 0 (
+
+echo %e%                                   No %r%Internet Connection%e%, press C to continue anyway
+
+echo %l%                                              [ %r%C%l% ] Continue  [ %r%Q%l% ] Quit 
+
+choice /c:"CQ" /n /m " "
+
+if !errorlevel! equ 2 exit /b
+
+echo.
+
+)
+
+
+
+if %SystemType%==Unknown (
+
+set MenuItem=%errorlevel%
+
+echo %e%                                   Unknown %r%System Type%e%, please select your System Type
+
+echo %l%                                              [ %r%D%l% ] Desktop  [ %r%L%l% ] Laptop
+
+choice /c:DL /n /m " "
+
+if !errorlevel! equ 1 set "SystemType=Desktop            "
+
+if !errorlevel! equ 2 set "SystemType=Laptop             "
+
+del /f "%temp%\SystemType.txt"
+
+echo !SystemType! > "%temp%\SystemType.txt"
+
+echo.
+
+)
+
+
+
+if exist "%SYSTEMDRIVE%\Vitality\Backup\regbackup.reg" (
+
+    if exist "%SYSTEMDRIVE%\Vitality\Backup\RestorePoint.bat" (
+
+        set "MStatus=Enabled       "
+
+    ) else (
+
+        set "MStatus=Disabled      "
+
+    )
+
+) else (
+
+    set "MStatus=Disabled      "
+
+)
+
+
+
+
+
+set "LastConfiguration=:Configuration1"
+
+
+
+:: OS informations
+
+set "OSVersion=Unknown         "
+
+systeminfo > "%temp%\SystemInfo.txt" 2>nul
+
+for /f "delims=" %%i in ('findstr /B /C:"OS Name" "%temp%\SystemInfo.txt"') do set "OSInfo=%%i"
+
+call :checkOS
+
+goto :eof
+
+
+
+:checkOS
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 7 Professional" set "OSVersion=Windows 7       "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 7 Enterprise" set "OSVersion=Windows 7       "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 8 Enterprise" set "OSVersion=Windows 8       "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 8.1 Professional" set "OSVersion=Windows 8.1     "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 10 Home" set "OSVersion=Windows 10      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 10 Pro" set "OSVersion=Windows 10      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 10 IoT Enterprise LTSC" set "OSVersion=Windows 10      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 10 Enterprise" set "OSVersion=Windows 10      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 10 Enterprise" set "OSVersion=Windows 10      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 11 Home" set "OSVersion=Windows 11      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 11 Pro" set "OSVersion=Windows 11      "
+
+if "%OSInfo%"=="OS Name:                   Microsoft Windows 11 Enterprise LTSC" set "OSVersion=Windows 11      "
+
+
+
+REM Tweaks Page 1 / FPS, Latency, GPU, Task Scheduler, Keboard and Mouse, CPU, Network
+
+set "FPS=False"
+
+set "Latency=False"
+
+set "GPU=False"
+
+set "Task=False"
+
+set "KBM=False"
+
+set "CPU=False"
+
+set "Network=False"
+
+
+
+REM Tweaks Page 2 / RAM, Disk, Windows Settings
+
+set "RAM=False"
+
+set "DISK=False"
+
+set "Windows=False"
+
+
+
+REM Recording Settings
+
+set "HighQuality=False"
+
+set "MediumQuality=False"
+
+set "LowQuality=False"
+
+
+
+REM Game Settings
+
+set "Minecraft=False"
+
+set "CSGO=False"
+
+set "Valorant=False"
+
+set "Fortnite=False"
+
+Set "COD=False"
+
+set "Apex=False"
+
+set "Rust=False"
+
+
+
+REM Privacy
+
+set "PrivacyCleanup=False"
+
+set "DataCol=False"
+
+set "SecurityImp=False"
+
+set "ConfigurePro=False"
+
+set "PrivacyOverSec=False"
+
+set "UIForPrivacy=False"
+
+
+
+set "LastTweaks1=true"
+
+
+
+
+
+REM Set Number Of Configuration Pages
+
+set "ConfigurationsPages=23"
+
+
+
+REM Set Number of Configuration Category Pages
+
+set "CategoryFPS_Pages=5"
+
+set "CategoryLatency_Pages=2"
+
+set "CategoryNvidiaGPU_Pages=3"
+
+set "CategoryAMDGPU_Pages=1"
+
+set "CategoryTaskSCH_Pages=1"
+
+set "CategoryKBM_Pages=1"
+
+set "CategoryNetwork_Pages=1"
+
+set "CategoryRAM_Pages=1"
+
+set "CategoryDISK_Pages=1"
+
+set "CategoryWindows_Pages=7"
+
+set "CategoryIntelCPU_Pages=1"
+
+set "CategoryAMDCPU_Pages=1"
+
+
+
+REM Configuration Page 1 / Category [FPS and Input Tweaks] Page 1
+
+set "Visuals=True"
+
+set "WindowsUpdates=True"
+
+set "WindowsDefender=True"
+
+set "ProcessMitigations=True"
+
+set "DebloatWindows=True"
+
+set "FSE=True"
+
+
+
+REM Configuration Page 2 / Category [FPS and Input Tweaks] Page 2
+
+if "%SystemType%"=="Desktop" (
+
+	set "PowerPlan=True"
+
+) else (
+
+	set "PowerPlan=False"
+
+)
+
+set "WindowsServices=True"
+
+set "Win32PrioritySeparation=True"
+
+set "DisableSearchIndexing=True"
+
+set "DisableFastStartup=True"
+
+set "ReserveCPUResources=True"
+
+
+
+REM Configuration Page 3 / Category [FPS and Input Tweaks] Page 3
+
+set "DisableBackgroundApps=True"
+
+set "Winlogon=True"
+
+set "IntelMicroCode=True"
+
+set "AMDMicroCode=True"
+
+set "EnableGPUSheduling=True"
+
+set "DisableSettingsSynchroniyation=True"
+
+
+
+REM Configuration Page 4 / Category [FPS and Input Tweaks] Page 4
+
+set "DisableRemoteAssistance=True"
+
+set "DisableGamebarpresencewriter=True"
+
+set "DisableSystemEnergySaving=True"
+
+set "SVCSplitThreshold=True"
+
+set "DisableUSBPowerSavings=True"
+
+set "EnableMSIMode=True"
+
+
+
+REM Configuration Page 5 / Category [FPS and Input Tweaks] Page 5
+
+set "DevicePriorityUndefined=True"
+
+
+
+
+
+REM Configuration Page 6 / Category [Latency Tweaks] Page 1
+
+set "SpectreMeltdown=True"
+
+set "DisableIDLE=False"
+
+set "MMCSS=True"
+
+set "CSRSS=True"
+
+set "LowProcessPriority=True"
+
+set "LowAudioLatency=True"
+
+
+
+
+
+
+
+REM Configuration Page 7 / Category [Latency Tweaks] Page 2
+
+set "TimerResolution=True"
+
+set "BCDLowLatency=True"
+
+set "DisableNetworkTrhottling=True"
+
+set "LatencyTolerance=True"
+
+
+
+REM Configuration Page 8 / Category [Network Tweaks] Page 1
+
+set "DisableNaglesAlgorithm=True"
+
+set "NIC=True"
+
+set "DNS=True"
+
+set "WindowsNetworkSettigns=True"
+
+set "Autotunning=False"
+
+
+
+REM Configuration Page 9 / Category [Keyboard and Mouse Tweaks] Page 1
+
+set "KeyboardDataSize=True"
+
+set "AdjustKeyboardParameters=True"
+
+set "KeyboardAccessibilitySettings=True"
+
+set "MouseDataSize=True"
+
+set "DisablePointerAcceleration=True"
+
+set "MouseAccessibilitySettings=True"
+
+
+
+REM Configuration Page 10 / Category [Nvidia Tweaks] Page 1
+
+set "GameMode=True"
+
+set "NvidiaTelemetry=True"
+
+set "P0States=True"
+
+set "HDCP=True"
+
+set "Preemption=True"
+
+set "Logging=True"
+
+
+
+REM Configuration Page 11 / Category [Nvidia Tweaks] Page 2
+
+set "NvidiaProfileInspector=True"
+
+set "DisableTiledDisplay=True"
+
+set "DisableTCC=True"
+
+set "ForceContiguousMemoryAllocation=True"
+
+set "KBoost=True"
+
+set "DisableScaling=True"
+
+
+
+REM Configuration Page 12 / Category [Nvidia Tweaks] Page 3
+
+set "NoECC=True"
+
+set "UnrestrictedClockPolicy=True"
+
+
+
+REM Configuration Page 13 / Category [AMD GPU Tweaks] Page 1
+
+set "GameModeAMD=True"
+
+set "AMDOptimizedSettings=True"
+
+set "AMDDebloat=True"
+
+
+
+
+
+REM Configuration Page 14 / Category [RAM Tweaks] Page 1
+
+set "MemoryManagment=True"
+
+set "LargePageDrivers=True"
+
+
+
+REM Configuration Page 15 / Category [Disk Tweaks] Page 1
+
+set "FileSystemOptimization=True"
+
+set "Cleaner=True"
+
+set "Startupcleaner=True"
+
+
+
+REM Configuration Page 16 / Category [Windows Tweaks] Page 1
+
+set "DisableTelemetry=True"
+
+set "DisableHibernation=True"
+
+set "BootOptions=True"
+
+set "PasswordOnWakeUp=True"
+
+set "DisableAutomaticMaintenance=True"
+
+set "DisableLocationTracking=True"
+
+
+
+REM Configuration Page 17 / Category [Windows Tweaks] Page 2
+
+set "DisablePushNotifications=True"
+
+set "DisableDriverSearching=True"
+
+set "DisableWindowsNotifications=True"
+
+set "DisableTransparency=True"
+
+set "PauseMapsUpdates=True"
+
+set "DisableSettingsSync=True"
+
+
+
+REM Configuration Page 18 / Category [Windows Tweaks] Page 3
+
+set "DisableAdvertisingID=True"
+
+set "DisableWebInSearch=True"
+
+set "DisableRemoteAssistance=True"
+
+set "DisableInventoryCollector=True"
+
+set "DisableWindowsErrorReporting=True"
+
+set "DisableCustomerExperienceProgram=True"
+
+
+
+REM Configuration Page 19 / Category [Windows Tweaks] Page 4
+
+set "DisableOneDriveSync=True"
+
+set "DisableBiometrics=True"
+
+set "DenyCapabilityForApps=True"
+
+set "DisableLocationServices=True"
+
+set "PreventWindowsMarkingFiles=True"
+
+set "DisableLanguageBar=False"
+
+
+
+REM Configuration Page 20 / Category [Windows Tweaks] Page 5
+
+set "DisableStickyKeys=True"
+
+set "DisableProgramCompatibilityAssistant=True"
+
+set "DisableFaultTolerantHeap=True"
+
+set "DisablePowerShellTelemtry=True"
+
+set "DisableWindowsErrorReporting=True"
+
+set "DisableRemoteAssistance=True"
+
+
+
+REM Configuration Page 21 / Category [Windows Tweaks] Page 6
+
+set "Remove3DObjectsFromExplorer=True"
+
+set "DisableSignInAndLockLastUser=True"
+
+set "DisableOnlineTips=True"
+
+set "DisableTypingInsights=True"
+
+set "DisableSuggestionsInTheSearchBox=True"
+
+set "RestoreOldContextMenu=True"
+
+
+
+REM Configuration Page 22 / Category [Windows Tweaks] Page 7
+
+set "RemovePinToQuickAccess=True"
+
+set "HideFoldersInQuickAccess=False"
+
+set "HideQuickAccessFromFileExplorer=True"
+
+set "LaunchFileExplorerToThisPC=True"
+
+set "TurnOffDisplayOfRecentSearch=True"
+
+set "ClearHistoryOfRecentlyOpenedDocumentsOnExit=True"
+
+
+
+REM Configuration Page 23 / Category [Intel CPU Tweaks] Page 1
+
+set "IntelCpuVirtualization=True"
+
+set "IntelCoreIsolation=True"
+
+set "IntelCStates=True"
+
+set "IntelPowerThrottling=True"
+
+set "AMDServices=True"
+
+set "IntelTSX=True"
+
+
+
+REM Configuration Page 23 / Category [AMD CPU Tweaks] Page 1
+
+set "AMDCpuVirtualization=True"
+
+set "AMDCoreIsolation=True"
+
+set "AMDCStates=True"
+
+set "AMDPowerThrottling=True"
+
+set "IntelServices=True"
+
+set "AMDTSX=True"
+
+
+
+REM Check if config.ini exists
+
+if exist C:\Vitality\config.ini (
+
+    for /f "tokens=1,2 delims==" %%a in (C:\Vitality\config.ini) do (
+
+        set "%%a=%%b"
+
+    )
+
+)
+
+
+
+:Home
+
+set LastPage=:Home
+
+cls
+
+echo.                                
+
+echo     %l%┌─────────────────────────────┐                       
+
+echo     │ %r%W%l% = %e%Up%l%       %r%D%l% = %e%Right%l%      │           %r% _      _  _____   __    _     _  _____  _%l%    
+
+echo     │ %r%S%l% = %e%Down%l%     %r%A%l% = %e%Left%l%       │          %r% \ \  / ^| ^|  ^| ^|   / /\  ^| ^|   ^| ^|  ^| ^|  \ \_/%l%      %r%▲%e% Pages  [%r%1%e%/1]%l%
+
+echo     │ %r%X%l% = %e%Apply%l%                   │            %r%\_\/  ^|_^|  ^|_^|  /_/--\ ^|_^|__ ^|_^|  ^|_^|   ^|_^|%l% 
+
+echo.    │ It's not that hard is it?   │
+
+echo     └─────────────────────────────┘                                                        
+
+echo     %l%┌─────────────────────────────┐         %r%▲%e% %welcome1% %l%
+
+echo     ^│                             ^│
+
+echo     ^│                             ^│       ┌───────────────────────────────────────────────────────────────────┐
+
+echo     ^│            %r%Home%l%             ^│       │ %ar%▼ %ar%Disclaimers%l%                                                     │
+
+echo     ^│                             ^│       │                                                                   │
+
+echo     ^│                             ^│       │ %ar%•%e% Use at Your Own Risk. %l%                                          │
+
+echo     ^│           Tweaks            ^│       │                                                                   │
+
+echo     ^│                             ^│       │ %ar%•%e% Not guaranteed to be compatible with all configurations. %l%       │
+
+echo     ^│                             ^│       │                                                                   │
+
+echo     ^│       Ingame Settings       ^│       │ %ar%•%e% Create a full system backup before applying any tweaks. %l%        │
+
+echo     ^│                             ^│       │                                                                   │
+
+echo     ^│                             ^│       │ %ar%•%e% Disable antivirus to avoid conflicts. %l%                          │
+
+echo     ^│      Recording Settings     ^│       │                                                                   │
+
+echo     ^│                             ^│       │ %ar%•%e% Understand the implications of each tweak before applying it. %l%  │
+
+echo     ^│                             ^│       └───────────────────────────────────────────────────────────────────┘
+
+echo     ^│           Privacy           ^│
+
+echo     ^│                             ^│       ┌───────────────────────────────────────────────────────────────────┐
+
+echo     ^│                             ^│       │ %r%▼ %r%Informations%l%                                                    │
+
+echo     ^│        Configuration        ^│       │                                                                   │
+
+echo     ^│                             ^│       │ %e%Applied Optimizations: %r%%formatted_optimizations%%l%         %e%Status of Backup: %r%%MStatus%%l%│
+
+echo     ^│                             ^│       │                                                                   │
+
+echo     ^│           Credits           ^│       │ %e%Operating System: %r%%OSVersion%%l%%e%System Type: %r%%SystemType%%l%│
+
+echo     ^│                             ^│       │                                                                   │
+
+echo     ^│                             ^│       └───────────────────────────────────────────────────────────────────┘
+
+echo     └─────────────────────────────┘
+
+choice /c:WS /n /m " "
+
+set MenuItem=%errorlevel%
+
+
+
+if "%MenuItem%"=="1" goto Credits
+
+if "%MenuItem%"=="2" (
+
+    if "%LastTweaks1%"=="true" (
+
+        goto :LastTweaks1
+
+    ) else (
+
+        goto :LastTweaks2
+
+    )
+
+) 
+
+
+
+
+
+:Tweaks 
+
+:LastTweaks1
+
+set LastPage=:Tweaks
+
+set LastTweaks1=true
+
+set LastTweaks2=False
+
+
+
+
+
+set "FPSc="
+
+if "%FPS%"=="False" (
+
+    set "FPSc=[38;5;203m"
+
+) else (
+
+    set "FPSc=[38;5;34m"
+
+)
+
+
+
+set "Latencyc="
+
+if "%Latency%"=="False" (
+
+    set "Latencyc=[38;5;203m"
+
+) else (
+
+    set "Latencyc=[38;5;34m"
+
+)
+
+
+
+set "Networkc="
+
+if "%Network%"=="False" (
+
+    set "Networkc=[38;5;203m"
+
+) else (
+
+    set "Networkc=[38;5;34m"
+
+)
+
+
+
+set "KBMc="
+
+if "%KBM%"=="False" (
+
+    set "KBMc=[38;5;203m"
+
+) else (
+
+    set "KBMc=[38;5;34m"
+
+)
+
+
+
+set "Taskc="
+
+if "%Task%"=="False" (
+
+    set "Taskc=[38;5;203m"
+
+) else (
+
+    set "Taskc=[38;5;34m"
+
+)
+
+
+
+set "Taskc="
+
+if "%Task%"=="False" (
+
+    set "Taskc=[38;5;203m"
+
+) else (
+
+    set "Taskc=[38;5;34m"
+
+)
+
+
+
+set "GPUc="
+
